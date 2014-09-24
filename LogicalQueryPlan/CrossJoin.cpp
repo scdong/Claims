@@ -2,7 +2,7 @@
  * CrossJoin.cpp
  *
  *  Created on: Jul 14, 2014
- *      Author: fzhedu, wangli1426
+ *      Author: fzhedu, wangli
  */
 
 #include "CrossJoin.h"
@@ -12,16 +12,16 @@
 #include "../BlockStreamIterator/ParallelBlockStreamIterator/BlockStreamExpander.h"
 #include "../Config.h"
 
-CrossJoin::CrossJoin():left_child_(0),right_child_(0),dataflow_(0)
+NestLoopJoin::NestLoopJoin():left_child_(0),right_child_(0),dataflow_(0)
 {
 	setOperatortype(l_cross_join);
 }
 
-CrossJoin::CrossJoin(LogicalOperator* left_input,LogicalOperator* right_input)
+NestLoopJoin::NestLoopJoin(LogicalOperator* left_input,LogicalOperator* right_input)
 :left_child_(left_input),right_child_(right_input),dataflow_(0){
 	setOperatortype(l_cross_join);
 }
-CrossJoin::~CrossJoin() {
+NestLoopJoin::~NestLoopJoin() {
 	dataflow_->~Dataflow();
 	if(left_child_>0){
 		left_child_->~LogicalOperator();
@@ -31,7 +31,7 @@ CrossJoin::~CrossJoin() {
 	}
 }
 
-Dataflow CrossJoin::getDataflow()
+Dataflow NestLoopJoin::getDataflow()
 {
 	if (0!=dataflow_)
 	{
@@ -118,7 +118,7 @@ Dataflow CrossJoin::getDataflow()
 	return ret;
 }
 
-BlockStreamIteratorBase* CrossJoin::getIteratorTree(const unsigned & block_size)
+BlockStreamIteratorBase* NestLoopJoin::getIteratorTree(const unsigned & block_size)
 {
 	if(dataflow_==0){
 		getDataflow();
@@ -141,7 +141,7 @@ BlockStreamIteratorBase* CrossJoin::getIteratorTree(const unsigned & block_size)
 	return cross_join_iterator;
 }
 
-void CrossJoin::generateChildPhysicalQueryPlan(
+void NestLoopJoin::generateChildPhysicalQueryPlan(
 		BlockStreamIteratorBase*& left_child_iterator_tree,
 		BlockStreamIteratorBase*& right_child_iterator_tree, const unsigned & blocksize) {
 
@@ -226,7 +226,7 @@ void CrossJoin::generateChildPhysicalQueryPlan(
 
 }
 
-void CrossJoin::print(int level) const
+void NestLoopJoin::print(int level) const
 {
 	printf("CrossJoin:\n",level*8," ");
 	switch(join_police_){
@@ -247,7 +247,7 @@ void CrossJoin::print(int level) const
 	right_child_->print(level+1);
 }
 
-bool CrossJoin::canLocalJoin(Dataflow& left, Dataflow& right) const {
+bool NestLoopJoin::canLocalJoin(Dataflow& left, Dataflow& right) const {
 	if(left.property_.partitioner.getNumberOfPartitions()>1)
 		return false;
 	if(right.property_.partitioner.getNumberOfPartitions()>1)

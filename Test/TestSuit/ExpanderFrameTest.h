@@ -5,6 +5,7 @@
 #include "../../common/AttributeComparator.h"
 #include "../../Parsetree/ExecuteLogicalQueryPlan.h"
 #include "../../Executor/IteratorExecutorSlave.h"
+#include "../../LogicalQueryPlan/CrossJoin.h"
 /*
  * ExpanderFrameTest.h
  *
@@ -421,6 +422,59 @@ static int test_no_repartition_scan_join(){
 	return 1;
 
 }
+
+static int test_complete_repartition_filtered_nest_loop_join(){
+	TableDescriptor* table_1=Catalog::getInstance()->getTable("cj");
+	TableDescriptor* table_2=Catalog::getInstance()->getTable("sb");
+	LogicalOperator* cj_join_key_scan=new LogicalScan(table_1->getProjectoin(0));
+	LogicalOperator* sb_join_key_scan=new LogicalScan(table_2->getProjectoin(0));
+
+
+	Filter::Condition filter_condition_1;
+	const int order_type=1;
+	filter_condition_1.add(table_1->getAttribute(0),AttributeComparator::L,std::string("3000"));
+//	filter_condition_1.add(table_1->getAttribute(5),AttributeComparator::EQ,std::string("1"));
+//	filter_condition_1.add(table_1->getAttribute(1),AttributeComparator::GEQ,std::string("20101008"));
+//	filter_condition_1.add(table_1->getAttribute(3),AttributeComparator::EQ,std::string("600036"));
+	LogicalOperator* filter_1=new Filter(filter_condition_1,cj_join_key_scan);
+
+	Filter::Condition filter_condition_2;
+	filter_condition_2.add(table_2->getAttribute(0),AttributeComparator::L,std::string("3000"));
+//	filter_condition_2.add(table_2->getAttribute(4), AttributeComparator::EQ, std::string("1"));
+//	filter_condition_2.add(table_2->getAttribute(2), AttributeComparator::GEQ, std::string("20101008"));
+//	filter_condition_2.add(table_2->getAttribute(3), AttributeComparator::EQ, std::string("600036"));
+	LogicalOperator* filter_2 = new Filter(filter_condition_2, sb_join_key_scan);
+
+	LogicalOperator* nest_loop_join = new NestLoopJoin(filter_1, filter_2);
+
+//	std::vector<EqualJoin::JoinPair> sb_cj_join_pair_list;
+//	sb_cj_join_pair_list.push_back(EqualJoin::JoinPair(table_1->getAttribute("order_no"),table_2->getAttribute("order_no")));
+//	sb_cj_join_pair_list.push_back(EqualJoin::JoinPair(table_1->getAttribute("trade_date"),table_2->getAttribute("entry_date")));
+//	sb_cj_join_pair_list.push_back(EqualJoin::JoinPair(table_1->getAttribute("trade_dir"),table_2->getAttribute("entry_dir")));
+//	LogicalOperator* sb_cj_join=new EqualJoin(sb_cj_join_pair_list,filter_1,filter_2);
+
+	const NodeID collector_node_id=0;
+	LogicalOperator* root=new LogicalQueryPlanRoot(collector_node_id,nest_loop_join,LogicalQueryPlanRoot::RESULTCOLLECTOR);
+
+	BlockStreamIteratorBase* executable_query_plan=root->getIteratorTree(1024*64 );
+	executable_query_plan->print();
+	IteratorExecutorSlave::executePhysicalQueryPlan(PhysicalQueryPlan(executable_query_plan));
+
+	ResultSet *result_set=executable_query_plan->getResultSet();
+
+	const unsigned long int number_of_tuples=result_set->getNumberOftuples();
+
+	if(!print_test_name_result(number_of_tuples==755754,"Filtered Re-partitioned Join")){
+		printf("\tExpected:27012 actual: %d\n",number_of_tuples);
+	}
+	printf("%4.4f seconds\n",result_set->query_time_);
+	executable_query_plan->~BlockStreamIteratorBase();
+	root->~LogicalOperator();
+
+	return 1;
+
+}
+
 static int test_expanderFramework_single_node(int repeated_times=20){
 
 
@@ -437,37 +491,37 @@ static int test_expanderFramework_single_node(int repeated_times=20){
 
 //	sleep(5);
 	printf("============Scan->Filter->Expander->Exchange->root============\n");
-	for(unsigned i=0;i<repeated_times;i++){
-////		printf("%d:",i);
+//	for(unsigned i=0;i<repeated_times;i++){
 //		test_scan();
-////		sleep(1);
-////		printf("-----------------------------------------\n");
+//	}
+//	for(unsigned i=0;i<repeated_times;i++){
+//		test_scan_filter_high_selectivity();
+//	}
+//	for(unsigned i=0;i<repeated_times;i++){
+//		test_scan_filter_low_selectivity();
+//	}
+//	for(unsigned i=0;i<repeated_times;i++){
+//		test_scan_filter_Aggregation();
+//	}
+//	for(unsigned i=0;i<repeated_times;i++){
+//		test_scan_filter_Scalar_Aggregation();
+//	}
+//	for(unsigned i=0 ; i < repeated_times ; i++){
+//		test_no_repartition_filtered_join();
+//	}
+//	for(unsigned i=0 ; i < repeated_times ; i++){
+//		test_complete_repartition_filtered_join();
+//	}
+//	for(unsigned i=0 ; i < repeated_times ; i++){
+//		test_complete_repartition_scan_join();
+//	}
+//	for(unsigned i=0 ; i < repeated_times ; i++){
+//		test_no_repartition_scan_join();
+//	}
+	for(unsigned i=0 ; i< repeated_times ; i++){
+		test_complete_repartition_filtered_nest_loop_join();
 	}
-	for(unsigned i=0;i<repeated_times;i++){
-		test_scan_filter_high_selectivity();
-	}
-	for(unsigned i=0;i<repeated_times;i++){
-		test_scan_filter_low_selectivity();
-	}
-	for(unsigned i=0;i<repeated_times;i++){
-		test_scan_filter_Aggregation();
-	}
-	for(unsigned i=0;i<repeated_times;i++){
-		test_scan_filter_Scalar_Aggregation();
-	}
-	for(unsigned i=0 ; i < repeated_times ; i++){
-		test_no_repartition_filtered_join();
-	}
-	for(unsigned i=0 ; i < repeated_times ; i++){
-		test_complete_repartition_filtered_join();
-	}
-	printf("______Repartition scan join_________\n");
-	for(unsigned i=0 ; i < repeated_times ; i++){
-		test_complete_repartition_scan_join();
-	}
-	for(unsigned i=0 ; i < repeated_times ; i++){
-		test_no_repartition_scan_join();
-	}
+
 	printf("__________________FINISHED__________________\n");
 	sleep(1);
 	Environment::getInstance()->~Environment();

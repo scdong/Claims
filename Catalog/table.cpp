@@ -8,13 +8,11 @@
 #include "table.h"
 #include "../common/Schema/SchemaFix.h"
 // ColumnDescriptor
-ProjectionDescriptor::ProjectionDescriptor(ProjectionID pid):projection_id_(pid){
+ProjectionDescriptor::ProjectionDescriptor(ProjectionID pid):projection_id_(pid),partitioner(0){
 }
 
 ProjectionDescriptor::ProjectionDescriptor(const string& name)
-:Projection_name_(name){
-	// Check if hdfsfile already exists
-	// Meanwhile create a hsfsfile to store this column's data.
+:Projection_name_(name),partitioner(0){
 }
 
 ProjectionDescriptor::~ProjectionDescriptor(){

@@ -2,7 +2,7 @@
  * CrossJoin.h
  *
  *  Created on: Jul 14, 2014
- *      Author: fzhedu, wangli1426
+ *      Author: fzhedu, wangli
  */
 
 #ifndef CROSSJOIN_H_
@@ -11,12 +11,12 @@
 #include "LogicalOperator.h"
 #include "../BlockStreamIterator/BlockStreamIteratorBase.h"
 
-class CrossJoin: public LogicalOperator {
+class NestLoopJoin: public LogicalOperator {
 public:
 	enum join_police{left_broadcast, right_broadcast, local_join};
-	CrossJoin();
-	CrossJoin(LogicalOperator* left_input,LogicalOperator* right_input);
-	virtual ~CrossJoin();
+	NestLoopJoin();
+	NestLoopJoin(LogicalOperator* left_input,LogicalOperator* right_input);
+	virtual ~NestLoopJoin();
 	Dataflow getDataflow();
 	BlockStreamIteratorBase* getIteratorTree(const unsigned& blocksize);
 	void print(int level=0)const;

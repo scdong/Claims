@@ -6,7 +6,22 @@
  */
 
 #include "ResultSet.h"
-
+#include <clocale>
+#include <cwchar>
+#include <stdlib.h>
+int get_real_size(const std::string& s)
+{
+    setlocale(LC_ALL, "zh_CN.utf8");
+    const char* _Source = s.c_str();
+    size_t _Dsize = s.size() + 1;
+    wchar_t *_Dest = new wchar_t[_Dsize];
+    wmemset(_Dest, 0, _Dsize);
+    mbstowcs(_Dest,_Source,_Dsize);
+    std::wstring result = _Dest;
+    delete []_Dest;
+    setlocale(LC_ALL, "C");
+    return result.length();
+}
 ResultSet::~ResultSet() {
 	delete schema_;
 }
@@ -40,7 +55,7 @@ void ResultSet::print() const {
 		void * tuple;
 		while(tuple=tuple_it->nextTuple()){
 			for(unsigned i=0;i<column_header_list_.size();i++){
-				int wide=schema_->getcolumn(i).operate->toString(schema_->getColumnAddess(i,tuple)).size()+space_per_column;
+				int wide=get_real_size(schema_->getcolumn(i).operate->toString(schema_->getColumnAddess(i,tuple)))+space_per_column;
 				column_wides[i]=max(column_wides[i],wide);
 			}
 			sample_times++;
@@ -88,7 +103,8 @@ void ResultSet::print() const {
 		void * tuple;
 		while(tuple=tuple_it->nextTuple()){
 			for(unsigned i=0;i<column_header_list_.size();i++){
-				int current_value_length=schema_->getcolumn(i).operate->toString(schema_->getColumnAddess(i,tuple)).length();
+				int current_value_length=get_real_size(schema_->getcolumn(i).operate->toString(schema_->getColumnAddess(i,tuple)));
+				printf("%d\n",current_value_length);
 				column_wides[i]=max(column_wides[i],current_value_length);
 				printf("| ");
 				printNChar((column_wides[i]-current_value_length)/2, ' ');
